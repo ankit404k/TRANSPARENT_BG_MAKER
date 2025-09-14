@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transparent BG Generator</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Checkerboard background to visualize transparency */
+        .checkerboard {
+            background-image:
+                linear-gradient(45deg, #4b5563 25%, transparent 25%),
+                linear-gradient(-45deg, #4b5563 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #4b5563 75%),
+                linear-gradient(-45deg, transparent 75%, #4b5563 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border: 2px dashed #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 border border-gray-700">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-white">Transparent BG Generator</h1>
+            <p class="text-gray-400 mt-2">Apna manpasand ratio select karein aur transparent image download karein.</p>
+        </div>
+
+        <!-- Controls for selecting ratio -->
+        <div class="space-y-4">
+            <div>
+                <label for="ratioSelect" class="block mb-2 text-sm font-medium text-gray-300">Ratio Chunein</label>
+                <select id="ratioSelect" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    <option value="1:1">1:1 (Square)</option>
+                    <option value="16:9">16:9 (Widescreen)</option>
+                    <option value="9:16">9:16 (Vertical)</option>
+                    <option value="4:3">4:3 (Standard)</option>
+                    <option value="3:4">3:4 (Portrait)</option>
+                    <option value="3:2">3:2 (Photography)</option>
+                    <option value="custom">Custom Ratio</option>
+                </select>
+            </div>
+
+            <!-- Custom ratio inputs, hidden by default -->
+            <div id="customRatioDiv" class="hidden grid grid-cols-2 gap-4 items-center">
+                <div>
+                    <label for="widthInput" class="block mb-2 text-sm font-medium text-gray-300">Width (chaudai)</label>
+                    <input type="number" id="widthInput" value="1920" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" placeholder="e.g., 1920">
+                </div>
+                <div>
+                     <label for="heightInput" class="block mb-2 text-sm font-medium text-gray-300">Height (unchai)</label>
+                    <input type="number" id="heightInput" value="1080" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" placeholder="e.g., 1080">
+                </div>
+            </div>
+
+             <div>
+                <label for="resolutionInput" class="block mb-2 text-sm font-medium text-gray-300">Max Dimension (pixels mein)</label>
+                <input type="number" id="resolutionInput" value="2048" min="1" max="8192" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" placeholder="e.g., 2048">
+             </div>
+        </div>
+
+        <!-- Preview area -->
+        <div class="w-full">
+            <p class="text-sm font-medium text-gray-300 mb-2 text-center">Preview</p>
+            <div id="previewDiv" class="w-full h-auto rounded-lg checkerboard transition-all duration-300 ease-in-out" style="aspect-ratio: 1/1;">
+            </div>
+        </div>
+
+        <!-- Download button -->
+        <button id="downloadBtn" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-800 font-medium rounded-lg text-lg px-5 py-3 text-center transition-transform transform active:scale-95">
+            PNG Download Karein
+        </button>
+    </div>
+
+    <script>
+        // DOM elements ko select karna
+        const ratioSelect = document.getElementById('ratioSelect');
+        const customRatioDiv = document.getElementById('customRatioDiv');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const resolutionInput = document.getElementById('resolutionInput');
+        const previewDiv = document.getElementById('previewDiv');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Preview ko update karne wala function
+        function updatePreview() {
+            const selectedValue = ratioSelect.value;
+            let ratioW, ratioH;
+
+            if (selectedValue === 'custom') {
+                customRatioDiv.classList.remove('hidden');
+                ratioW = parseInt(widthInput.value) || 1;
+                ratioH = parseInt(heightInput.value) || 1;
+            } else {
+                customRatioDiv.classList.add('hidden');
+                [ratioW, ratioH] = selectedValue.split(':').map(Number);
+            }
+            
+            if (ratioW > 0 && ratioH > 0) {
+                 previewDiv.style.aspectRatio = `${ratioW} / ${ratioH}`;
+            }
+        }
+
+        // Download button pe click handle karne wala function
+        function handleDownload() {
+            const selectedValue = ratioSelect.value;
+            let ratioW, ratioH;
+
+            if (selectedValue === 'custom') {
+                ratioW = parseInt(widthInput.value) || 1;
+                ratioH = parseInt(heightInput.value) || 1;
+            } else {
+                [ratioW, ratioH] = selectedValue.split(':').map(Number);
+            }
+            
+            if (ratioW <= 0 || ratioH <= 0) {
+                console.error("Invalid ratio for download.");
+                return;
+            }
+
+            const maxDimension = parseInt(resolutionInput.value) || 2048;
+            let imageWidth, imageHeight;
+
+            // Image dimensions calculate karna, aspect ratio maintain karte hue
+            if (ratioW >= ratioH) {
+                imageWidth = maxDimension;
+                imageHeight = Math.round((maxDimension / ratioW) * ratioH);
+            } else {
+                imageHeight = maxDimension;
+                imageWidth = Math.round((maxDimension / ratioH) * ratioW);
+            }
+
+            // Canvas element memory mein banana
+            const canvas = document.createElement('canvas');
+            canvas.width = imageWidth;
+            canvas.height = imageHeight;
+
+            // Canvas by default transparent hi hota hai, to kuch draw karne ki zaroorat nahi.
+            
+            // Download link create karna
+            const link = document.createElement('a');
+            link.download = `transparent_${ratioW}x${ratioH}_${imageWidth}x${imageHeight}.png`;
+            link.href = canvas.toDataURL('image/png');
+            
+            // Link ko click karke download trigger karna
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Event listeners set karna
+        ratioSelect.addEventListener('change', updatePreview);
+        widthInput.addEventListener('input', updatePreview);
+        heightInput.addEventListener('input', updatePreview);
+        downloadBtn.addEventListener('click', handleDownload);
+
+        // Page load hone par initial setup karna
+        updatePreview();
+    </script>
+
+</body>
+</html>
