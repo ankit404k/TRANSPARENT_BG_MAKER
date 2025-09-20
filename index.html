@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transparent BG Generator</title>
-    <!-- Tailwind CSS CDN for styling -->
+    <title>Background Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -28,11 +27,10 @@
 
     <div class="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 border border-gray-700">
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-white">Transparent BG Generator</h1>
-            <p class="text-gray-400 mt-2">Apna manpasand ratio select karein aur transparent image download karein.</p>
+            <h1 class="text-3xl font-bold text-white">Background Generator</h1>
+            <p class="text-gray-400 mt-2">Apna manpasand ratio aur background select karke image download karein.</p>
         </div>
 
-        <!-- Controls for selecting ratio -->
         <div class="space-y-4">
             <div>
                 <label for="ratioSelect" class="block mb-2 text-sm font-medium text-gray-300">Ratio Chunein</label>
@@ -47,7 +45,6 @@
                 </select>
             </div>
 
-            <!-- Custom ratio inputs, hidden by default -->
             <div id="customRatioDiv" class="hidden grid grid-cols-2 gap-4 items-center">
                 <div>
                     <label for="widthInput" class="block mb-2 text-sm font-medium text-gray-300">Width (chaudai)</label>
@@ -59,20 +56,39 @@
                 </div>
             </div>
 
-             <div>
+            <div>
                 <label for="resolutionInput" class="block mb-2 text-sm font-medium text-gray-300">Max Dimension (pixels mein)</label>
                 <input type="number" id="resolutionInput" value="2048" min="1" max="8192" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5" placeholder="e.g., 2048">
-             </div>
+            </div>
+            
+            <hr class="border-gray-600">
+            
+            <div>
+                <label class="block mb-2 text-sm font-medium text-gray-300">Background Type Chunein</label>
+                <div class="flex items-center space-x-6 mt-2">
+                    <div class="flex items-center">
+                        <input id="bgTypeTransparent" type="radio" value="transparent" name="bgType" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-600" checked>
+                        <label for="bgTypeTransparent" class="ms-2 text-sm font-medium text-gray-300">Transparent</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="bgTypeColor" type="radio" value="color" name="bgType" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-600">
+                        <label for="bgTypeColor" class="ms-2 text-sm font-medium text-gray-300">Solid Color</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="colorPickerDiv" class="hidden">
+                <label for="colorPicker" class="block mb-2 text-sm font-medium text-gray-300">Color Chunein</label>
+                <input type="color" id="colorPicker" value="#ffffff" class="p-1 h-10 w-full block bg-gray-700 border border-gray-600 cursor-pointer rounded-lg">
+            </div>
         </div>
 
-        <!-- Preview area -->
         <div class="w-full">
             <p class="text-sm font-medium text-gray-300 mb-2 text-center">Preview</p>
             <div id="previewDiv" class="w-full h-auto rounded-lg checkerboard transition-all duration-300 ease-in-out" style="aspect-ratio: 1/1;">
             </div>
         </div>
 
-        <!-- Download button -->
         <button id="downloadBtn" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-800 font-medium rounded-lg text-lg px-5 py-3 text-center transition-transform transform active:scale-95">
             PNG Download Karein
         </button>
@@ -87,9 +103,16 @@
         const resolutionInput = document.getElementById('resolutionInput');
         const previewDiv = document.getElementById('previewDiv');
         const downloadBtn = document.getElementById('downloadBtn');
+        
+        // NEW: Background control elements
+        const bgTypeTransparent = document.getElementById('bgTypeTransparent');
+        const bgTypeColor = document.getElementById('bgTypeColor');
+        const colorPickerDiv = document.getElementById('colorPickerDiv');
+        const colorPicker = document.getElementById('colorPicker');
 
         // Preview ko update karne wala function
         function updatePreview() {
+            // Ratio update logic
             const selectedValue = ratioSelect.value;
             let ratioW, ratioH;
 
@@ -104,6 +127,19 @@
             
             if (ratioW > 0 && ratioH > 0) {
                  previewDiv.style.aspectRatio = `${ratioW} / ${ratioH}`;
+            }
+
+            // NEW: Background preview logic
+            if (bgTypeColor.checked) {
+                colorPickerDiv.classList.remove('hidden');
+                previewDiv.classList.remove('checkerboard'); // remove checkerboard style
+                previewDiv.style.backgroundColor = colorPicker.value;
+                previewDiv.style.border = '2px solid #6b7280'; // Add a solid border for colored bg
+            } else {
+                colorPickerDiv.classList.add('hidden');
+                previewDiv.classList.add('checkerboard'); // add checkerboard style
+                previewDiv.style.backgroundColor = 'transparent';
+                previewDiv.style.border = '2px dashed #6b7280'; // Revert to dashed border
             }
         }
 
@@ -140,12 +176,23 @@
             const canvas = document.createElement('canvas');
             canvas.width = imageWidth;
             canvas.height = imageHeight;
-
-            // Canvas by default transparent hi hota hai, to kuch draw karne ki zaroorat nahi.
             
+            let filename = '';
+
+            // NEW: Fill canvas with color if selected
+            if (bgTypeColor.checked) {
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = colorPicker.value;
+                ctx.fillRect(0, 0, imageWidth, imageHeight);
+                filename = `color_bg_${ratioW}x${ratioH}_${imageWidth}x${imageHeight}.png`;
+            } else {
+                // Canvas by default transparent hi hota hai
+                 filename = `transparent_bg_${ratioW}x${ratioH}_${imageWidth}x${imageHeight}.png`;
+            }
+
             // Download link create karna
             const link = document.createElement('a');
-            link.download = `transparent_${ratioW}x${ratioH}_${imageWidth}x${imageHeight}.png`;
+            link.download = filename;
             link.href = canvas.toDataURL('image/png');
             
             // Link ko click karke download trigger karna
@@ -159,6 +206,11 @@
         widthInput.addEventListener('input', updatePreview);
         heightInput.addEventListener('input', updatePreview);
         downloadBtn.addEventListener('click', handleDownload);
+        
+        // NEW: Event listeners for background controls
+        bgTypeTransparent.addEventListener('change', updatePreview);
+        bgTypeColor.addEventListener('change', updatePreview);
+        colorPicker.addEventListener('input', updatePreview);
 
         // Page load hone par initial setup karna
         updatePreview();
